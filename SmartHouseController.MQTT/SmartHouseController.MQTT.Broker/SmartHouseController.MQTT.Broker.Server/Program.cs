@@ -1,13 +1,13 @@
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Server;
-using MqttServer.Handlers;
 using Serilog;
+using SmartHouseController.MQTT.Broker.Server.Handlers;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .WriteTo.Console()
-    .CreateLogger();
+    .CreateLogger(); 
 
 var mqttFactory = new MqttFactory();
 var mqttServerOptions = new MqttServerOptionsBuilder()

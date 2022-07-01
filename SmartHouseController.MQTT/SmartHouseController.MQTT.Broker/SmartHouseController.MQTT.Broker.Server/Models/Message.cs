@@ -1,6 +1,6 @@
-﻿namespace MqttServer.Models;
+﻿namespace SmartHouseController.MQTT.Broker.Server.Models;
 
-public class Message
+public class MessageDto
 {
     public string ClientId { get; set; }
     public string Payload { get; set; }
