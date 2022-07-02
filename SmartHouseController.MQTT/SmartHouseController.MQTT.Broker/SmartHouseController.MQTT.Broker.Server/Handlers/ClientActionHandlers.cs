@@ -1,19 +1,18 @@
-﻿using System.Net.Mime;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using MQTTnet.Server;
-using MqttServer.Exceptions;
-using MqttServer.Models;
 using Serilog;
+using SmartHouseController.MQTT.Broker.Server.Exceptions;
+using SmartHouseController.MQTT.Broker.Server.Models;
 
-namespace MqttServer.Handlers;
+namespace SmartHouseController.MQTT.Broker.Server.Handlers;
 
 public static class ClientActionHandlers
 {
     public static Task OnConnectedValidateAsync(ValidatingConnectionEventArgs e)
     {
 
-        // TODO: valdiation
+        // TODO: validation
         
         return Task.CompletedTask;
     }
@@ -34,7 +33,7 @@ public static class ClientActionHandlers
 
     public static Task OnMessageAsync(InterceptingPublishEventArgs e)
     {
-        var message = new Message
+        var message = new MessageDto
             {
                 ClientId = e.ClientId,
                 Payload = e.ApplicationMessage?.Payload == null 
