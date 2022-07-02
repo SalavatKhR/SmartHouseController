@@ -5,6 +5,7 @@ using MQTTnet.Server;
 using Serilog;
 using Serilog.Events;
 using SmartHouseController.MQTT.Broker.Server.Extension;
+using SmartHouseController.MQTT.Broker.Server.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,7 @@ builder.Services.AddSwaggerGen();
 
 var optionBuilder = new MqttServerOptionsBuilder()
     .WithDefaultEndpoint()
+    .WithDefaultCommunicationTimeout(TimeSpan.FromMilliseconds(5000))
     .Build();
 
 builder.Services
@@ -27,6 +29,9 @@ builder.Services
     .AddMqttConnectionHandler()
     .AddConnections()
     .AddMqttTcpServerAdapter();;
+
+builder.Services.AddMqttConnectionHandler();
+builder.Services.AddMqttWebSocketServerAdapter();
 
 var app = builder.Build();
 
@@ -41,8 +46,6 @@ app.UseMqttServer(server =>
     server.Setup();
 });
 
-app.MapMqtt("/data");
-
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
@@ -50,25 +53,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-#region client
-
-var mqttFactory = new MqttFactory();
-using var mqttClient = mqttFactory.CreateMqttClient();
-var mqttClientOptions = new MqttClientOptionsBuilder()
-    .WithTcpServer("localhost")
-    .WithCleanSession()
-    .WithClientId(Guid.NewGuid().ToString())
-    .Build();
-
-await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-
-var applicationMessage = new MqttApplicationMessageBuilder()
-    .WithTopic("samples/temperature/living_room")
-    .WithPayload("19.5")
-    .Build();
-
-await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
-
-
-#endregion
