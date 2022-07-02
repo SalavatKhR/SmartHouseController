@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHouseController.MQTT.B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHouseController.MQTT.Broker.Domain", "SmartHouseController.MQTT.Broker\SmartHouseController.MQTT.Broker.Domain\SmartHouseController.MQTT.Broker.Domain.csproj", "{841EAE85-B4D0-428C-BEB2-DB127BAB5848}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHouseController.MQTT.Broker.Api", "SmartHouseController.MQTT.Broker\SmartHouseController.MQTT.Broker.Api\SmartHouseController.MQTT.Broker.Api.csproj", "{A4E8A618-168A-4678-A6EA-69C8CF978E5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{841EAE85-B4D0-428C-BEB2-DB127BAB5848}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{841EAE85-B4D0-428C-BEB2-DB127BAB5848}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{841EAE85-B4D0-428C-BEB2-DB127BAB5848}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4E8A618-168A-4678-A6EA-69C8CF978E5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4E8A618-168A-4678-A6EA-69C8CF978E5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4E8A618-168A-4678-A6EA-69C8CF978E5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4E8A618-168A-4678-A6EA-69C8CF978E5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

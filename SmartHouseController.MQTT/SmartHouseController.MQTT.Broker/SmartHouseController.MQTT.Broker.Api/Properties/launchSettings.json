@@ -1,23 +1,28 @@
 ﻿{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:21160",
-      "sslPort": 44330
+      "applicationUrl": "http://localhost:38173",
+      "sslPort": 44357
     }
   },
   "profiles": {
-    "SmartHouseController.MQTT.Broker.Server": {
+    "SmartHouseController.MQTT.Broker.Api": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "applicationUrl": "https://localhost:7093;http://localhost:5093",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7172;http://localhost:5172",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "IIS Express": {
       "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
