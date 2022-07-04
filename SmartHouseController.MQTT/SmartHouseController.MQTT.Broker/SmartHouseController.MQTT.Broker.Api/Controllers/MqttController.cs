@@ -31,7 +31,6 @@ public class MqttController : Controller
 
         await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
 
-
         #endregion
 
     }

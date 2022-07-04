@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using MQTTnet;
 using WebAPI.Data;
+using WebAPI.Hubs;
+using WebAPI.Models;
 
 namespace WebAPI;
 
@@ -32,12 +35,18 @@ public class Startup
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
+            
+            
         });
+        services.AddSingleton<MqttFactory>();
+        services.AddSingleton<IConnections, Connections>();
+        services.AddSingleton<Subscriptions>(); // temp
         services.AddAuthenticationAndJwt(_configuration)
             .AddAuthorization()
             .AddOpenIddictServer(_env);
         services.AddControllers();
         services.AddEndpointsApiExplorer();
+        services.AddSignalR();
         services.AddSwaggerGen(option =>
         {
             option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -83,6 +92,7 @@ public class Startup
                 options.RoutePrefix = "swagger";
             });
         }
+        
         app
             .UseStaticFiles() //for wwwroot
             .UseRouting()
@@ -91,6 +101,7 @@ public class Startup
             .UseCors()
             .UseEndpoints(endpoints =>
             {
+                endpoints.MapHub<ControllersHub>("/hub");
                 endpoints.MapDefaultControllerRoute();
             });
     }
