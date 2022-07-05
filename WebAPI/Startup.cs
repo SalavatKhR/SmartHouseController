@@ -1,6 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using MQTTnet;
 using WebAPI.Data;
+using WebAPI.Hubs;
+using WebAPI.Models;
 
 namespace WebAPI;
 
@@ -23,21 +27,26 @@ public class Startup
             options.UseOpenIddict();
         });
         services.AddIdentity();
-        services.AddCors(opt =>
-        {
-            opt.AddDefaultPolicy(builder =>
-            {
-                builder
-                    .AllowAnyOrigin()
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-            });
-        });
-        services.AddAuthenticationAndJwt(_configuration)
+        services.AddSingleton<MqttFactory>();
+        services.AddSingleton<IConnections, Connections>();
+        services
+            .AddAuthenticationAndJwt(_configuration)
             .AddAuthorization()
             .AddOpenIddictServer(_env);
         services.AddControllers();
         services.AddEndpointsApiExplorer();
+        services.AddSignalR();
+        services.AddCors(options =>
+        {
+            options.AddPolicy(name: "policyName",
+                builder =>
+                {
+                    builder
+                        .SetIsOriginAllowed(origin => true)
+                        .WithMethods("GET") 
+                        .AllowAnyHeader();
+                });
+        });
         services.AddSwaggerGen(option =>
         {
             option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -83,14 +92,16 @@ public class Startup
                 options.RoutePrefix = "swagger";
             });
         }
+        
         app
             .UseStaticFiles() //for wwwroot
             .UseRouting()
             .UseAuthentication()
             .UseAuthorization()
-            .UseCors()
+            .UseCors("policyName")
             .UseEndpoints(endpoints =>
             {
+                endpoints.MapHub<ControllersHub>("/hub");
                 endpoints.MapDefaultControllerRoute();
             });
     }

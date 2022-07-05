@@ -6,6 +6,7 @@ namespace WebAPI.Data;
 
 public class ApplicationDbContext: IdentityDbContext<AppUser>
 {
+    public DbSet<Subscription> Subscriptions { get; set; }
     public ApplicationDbContext()
     {
     }
@@ -17,6 +18,13 @@ public class ApplicationDbContext: IdentityDbContext<AppUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+
+        builder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.UserId);
+        });
+
 
         builder.Entity<AppUser>(entity =>
         {
