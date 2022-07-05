@@ -1,32 +1,77 @@
 ﻿using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Client;
+using WebAPI.Data;
 using WebAPI.Models;
 
 namespace WebAPI.Hubs;
 
-// [Authorize]
+[Authorize]
 public class ControllersHub : Hub
 {
-    private readonly IConnections _connections;
     private readonly MqttFactory _mqttFactory;
-    private readonly Subscriptions _subscriptions;
-
+    private readonly IConnections _connections;
+    private readonly ApplicationDbContext _context;
     public ControllersHub(
         MqttFactory mqttFactory,
         IConnections connections,
-        Subscriptions subscriptions)
+        ApplicationDbContext context)
     {
         _mqttFactory = mqttFactory;
         _connections = connections;
-        _subscriptions = subscriptions;
+        _context = context;
     }
-
+    
+    public override async Task OnConnectedAsync()
+    {
+        var subs = await _context.Subscriptions
+            .Where(u => u.UserId == Context.User.Identity.Name)
+            .ToListAsync();
+        
+        var res = JsonSerializer.Serialize(new
+        {
+            userId = Context.User.Identity.Name,
+            topics = subs
+        });
+        
+        var mqttClient = _mqttFactory.CreateMqttClient();
+        var mqttClientOptions = new MqttClientOptionsBuilder()
+            .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
+            .WithClientId(Context.ConnectionId)
+            .WithCredentials("user1", "user1234")
+            .WithTls()
+            .WithCleanSession()
+            .Build();
+        
+        await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+        
+        mqttClient.ApplicationMessageReceivedAsync += e =>
+        {
+            Clients.Caller.SendAsync(JsonSerializer.Serialize(e));
+            
+            return Task.CompletedTask;
+        };
+    
+        // создать сокет и подписаться на все топики пользователя
+        foreach (var sub in subs)
+        {
+            var mqttSubscribeOptions = _mqttFactory.CreateSubscribeOptionsBuilder()
+                .WithTopicFilter(f => { f.WithTopic(sub.Topic); })
+                .Build();
+        
+            await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
+        }
+        
+        _connections.AddConnection(Context.User.Identity.Name, mqttClient);
+        
+        await Clients.Caller.SendAsync(res);
+    }
+    
     public async Task SubscribeToTopic(string topic)
     {
-        // var user = Context.User.Claims.First(claim => claim.Type == "email").Value;
-        
         var mqttClient = _mqttFactory.CreateMqttClient();
         var mqttClientOptions = new MqttClientOptionsBuilder()
             .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
@@ -43,26 +88,37 @@ public class ControllersHub : Hub
             return Task.CompletedTask;
         };
 
-        // if (_subscriptions.Collection[user] == null)
-        //     _subscriptions.Collection[user] = new List<string> { topic };
-        // else 
-        //     _subscriptions.Collection[user].Add(topic);
-        
-        await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+        _context.Subscriptions.Add(new Subscription
+        {
+            UserId = Context.User.Identity.Name,
+            Topic = topic
+        });
 
+        await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+    
         var mqttSubscribeOptions = _mqttFactory.CreateSubscribeOptionsBuilder()
             .WithTopicFilter(f => { f.WithTopic(topic); })
             .Build();
         
         await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
-        
-        _connections.AddConnection(Context.ConnectionId, (MqttClient) mqttClient);
     }
+    
+    public Task UnsubscribeFromTopic(string topic)
+    {
+        var record = _context.Subscriptions
+            .FirstOrDefaultAsync(u => u.Topic == topic & u.UserId == Context.User.Identity.Name);
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
+        _context.Remove(record);
+
+        _context.SaveChanges();
+
+        return Task.CompletedTask;
+    }
+    
+    public override Task OnDisconnectedAsync(Exception? exception)
     {
         _connections.RemoveConnection(Context.ConnectionId);
         
-        await base.OnDisconnectedAsync(exception);
+        return base.OnDisconnectedAsync(exception);
     }
 }

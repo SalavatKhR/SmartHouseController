@@ -1,31 +1,23 @@
-﻿using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+﻿using System.Collections.Concurrent;
 using MQTTnet.Client;
 
 namespace WebAPI.Models;
 
 public class Connections : IConnections
 {
-    private static Dictionary<string, MqttClient> _connections;
+    private static ConcurrentDictionary<string, IMqttClient?> _connections = new (); 
 
-    public static Dictionary<string, MqttClient> Retrieve
+    public void AddConnection(string userId, IMqttClient? client)
     {
-        get
-        {
-            if (_connections == null)
-                _connections = new Dictionary<string, MqttClient>();
-
-            return _connections;
-        }
-    }
-    
-    public void AddConnection(string userId, MqttClient client)
-    {
-        _connections.Add(userId, client);
+        if (!_connections.ContainsKey(userId))
+            _connections.TryAdd(userId, client);
+        else
+            _connections.TryAdd(userId, client);
     }
 
     public void RemoveConnection(string userId)
     {
-        _connections[userId].Dispose();
-        _connections.Remove(userId);
+        _connections[userId]?.Dispose();
+        _connections.TryRemove(userId, out var value);
     }
 }
