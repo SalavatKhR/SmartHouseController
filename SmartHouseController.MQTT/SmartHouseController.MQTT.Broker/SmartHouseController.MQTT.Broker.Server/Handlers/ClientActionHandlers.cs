@@ -40,10 +40,9 @@ public static class ClientActionHandlers
                     ? throw new EmptyFieldMessageRequestException("Payload")
                     : Encoding.UTF8.GetString(e.ApplicationMessage!.Payload),
                 Topic = e.ApplicationMessage.Topic ?? throw new EmptyFieldMessageRequestException("Topic"),
-                QoS = (int) e.ApplicationMessage.QualityOfServiceLevel
             };
         
-        Log.Logger.Information(JsonSerializer.Serialize(message));
+        Log.Logger.Information($"topic: {message.Topic}, payload: {message.Payload}");
 
         return Task.CompletedTask;
     }

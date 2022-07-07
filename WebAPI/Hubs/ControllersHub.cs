@@ -1,5 +1,6 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
+﻿using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
@@ -9,52 +10,63 @@ using WebAPI.Models;
 
 namespace WebAPI.Hubs;
 
-[Authorize]
+// [Authorize]
 public class ControllersHub : Hub
 {
     private readonly MqttFactory _mqttFactory;
     private readonly IConnections _connections;
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<ControllersHub> _logger;
+    private string _lastMessage;
+    private string _lastSentMessage;
+    
+    private readonly string userId = "120877ed-84b9-4ed5-9b87-d78965fc4fe0";
     public ControllersHub(
         MqttFactory mqttFactory,
         IConnections connections,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        ILogger<ControllersHub> logger)
     {
         _mqttFactory = mqttFactory;
         _connections = connections;
         _context = context;
+        _logger = logger;
+        _lastMessage = string.Empty;
+        _lastSentMessage = string.Empty;
     }
     
     public override async Task OnConnectedAsync()
     {
-        var subs = await _context.Subscriptions
-            .Where(u => u.UserId == Context.User.Identity.Name)
-            .ToListAsync();
+        _logger.LogInformation($"{userId} has been connected");
         
-        var res = JsonSerializer.Serialize(new
+        var subs = await _context.Subscriptions
+            .Where(u => u.UserId == userId)
+            .ToListAsync();
+
+        var res = new
         {
-            userId = Context.User.Identity.Name,
+            userId = userId,
             topics = subs
-        });
+        };
+        
+        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString());
         
         var mqttClient = _mqttFactory.CreateMqttClient();
+        mqttClient.ApplicationMessageReceivedAsync += e =>
+        {
+            _lastMessage = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+
+             return Task.CompletedTask;
+        };
+
         var mqttClientOptions = new MqttClientOptionsBuilder()
-            .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
+            .WithTcpServer("localhost")
             .WithClientId(Context.ConnectionId)
-            .WithCredentials("user1", "user1234")
-            .WithTls()
             .WithCleanSession()
             .Build();
         
         await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
         
-        mqttClient.ApplicationMessageReceivedAsync += e =>
-        {
-            Clients.Caller.SendAsync(JsonSerializer.Serialize(e));
-            
-            return Task.CompletedTask;
-        };
-    
         // создать сокет и подписаться на все топики пользователя
         foreach (var sub in subs)
         {
@@ -65,19 +77,33 @@ public class ControllersHub : Hub
             await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
         }
         
-        _connections.AddConnection(Context.User.Identity.Name, mqttClient);
-        
-        await Clients.Caller.SendAsync(res);
+        _connections.AddConnection(userId, mqttClient);
+
+        await GetUpdates();
+    }
+
+    private async Task GetUpdates()
+    {
+        while (true)
+        {
+            if (!string.IsNullOrEmpty(_lastMessage) & _lastMessage != _lastSentMessage)
+            {
+                Console.WriteLine(_lastMessage);
+                _lastSentMessage = _lastMessage;
+                await Clients.Client(Context.ConnectionId).SendAsync("GetUpdates", _lastMessage);
+            }
+
+            await Task.Delay(5000);
+        }
     }
     
     public async Task SubscribeToTopic(string topic)
     {
         var mqttClient = _mqttFactory.CreateMqttClient();
         var mqttClientOptions = new MqttClientOptionsBuilder()
-            .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
-            .WithClientId(Context.ConnectionId)
+            .WithTcpServer("localhost")
+            .WithClientId(userId)
             .WithCredentials("user1", "user1234")
-            .WithTls()
             .WithCleanSession()
             .Build();
         
@@ -90,7 +116,7 @@ public class ControllersHub : Hub
 
         _context.Subscriptions.Add(new Subscription
         {
-            UserId = Context.User.Identity.Name,
+            UserId = userId,
             Topic = topic
         });
 
@@ -106,7 +132,7 @@ public class ControllersHub : Hub
     public Task UnsubscribeFromTopic(string topic)
     {
         var record = _context.Subscriptions
-            .FirstOrDefaultAsync(u => u.Topic == topic & u.UserId == Context.User.Identity.Name);
+            .FirstOrDefaultAsync(u => u.Topic == topic & u.UserId == userId);
 
         _context.Remove(record);
 
@@ -117,7 +143,9 @@ public class ControllersHub : Hub
     
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        _connections.RemoveConnection(Context.ConnectionId);
+        _connections.RemoveConnection(userId);
+        
+        _logger.LogInformation($"{userId} has been disconnected");
         
         return base.OnDisconnectedAsync(exception);
     }

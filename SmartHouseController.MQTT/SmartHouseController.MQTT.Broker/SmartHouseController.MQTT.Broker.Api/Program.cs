@@ -1,11 +1,8 @@
-using MQTTnet;
 using MQTTnet.AspNetCore;
-using MQTTnet.Client;
 using MQTTnet.Server;
 using Serilog;
 using Serilog.Events;
 using SmartHouseController.MQTT.Broker.Server.Extension;
-using SmartHouseController.MQTT.Broker.Server.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,14 +18,14 @@ builder.Services.AddSwaggerGen();
 
 var optionBuilder = new MqttServerOptionsBuilder()
     .WithDefaultEndpoint()
-    .WithDefaultCommunicationTimeout(TimeSpan.FromMilliseconds(5000))
+    .WithDefaultCommunicationTimeout(TimeSpan.FromMilliseconds(1000))
     .Build();
 
 builder.Services
     .AddHostedMqttServer(optionBuilder)
     .AddMqttConnectionHandler()
     .AddConnections()
-    .AddMqttTcpServerAdapter();;
+    .AddMqttTcpServerAdapter();
 
 builder.Services.AddMqttConnectionHandler();
 builder.Services.AddMqttWebSocketServerAdapter();
