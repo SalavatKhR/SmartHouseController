@@ -17,9 +17,8 @@ public class ControllersHub : Hub
     private readonly IConnections _connections;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ControllersHub> _logger;
-    private string _lastMessage;
-    private string _lastSentMessage;
-    
+    private readonly Queue<string?> _messages;
+
     private readonly string userId = "120877ed-84b9-4ed5-9b87-d78965fc4fe0";
     public ControllersHub(
         MqttFactory mqttFactory,
@@ -31,8 +30,7 @@ public class ControllersHub : Hub
         _connections = connections;
         _context = context;
         _logger = logger;
-        _lastMessage = string.Empty;
-        _lastSentMessage = string.Empty;
+        _messages = new Queue<string?>();
     }
     
     public override async Task OnConnectedAsync()
@@ -54,7 +52,7 @@ public class ControllersHub : Hub
         var mqttClient = _mqttFactory.CreateMqttClient();
         mqttClient.ApplicationMessageReceivedAsync += e =>
         {
-            _lastMessage = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+            _messages.Enqueue(Encoding.UTF8.GetString(e.ApplicationMessage.Payload));
 
              return Task.CompletedTask;
         };
@@ -86,59 +84,33 @@ public class ControllersHub : Hub
     {
         while (true)
         {
-            if (!string.IsNullOrEmpty(_lastMessage) & _lastMessage != _lastSentMessage)
+            if (_messages.TryDequeue(out var message))
             {
-                Console.WriteLine(_lastMessage);
-                _lastSentMessage = _lastMessage;
-                await Clients.Client(Context.ConnectionId).SendAsync("GetUpdates", _lastMessage);
+                Console.WriteLine(message);
+                await Clients.Client(Context.ConnectionId).SendAsync("GetUpdates", message);
             }
-
-            await Task.Delay(5000);
         }
     }
     
     public async Task SubscribeToTopic(string topic)
     {
-        var mqttClient = _mqttFactory.CreateMqttClient();
-        var mqttClientOptions = new MqttClientOptionsBuilder()
-            .WithTcpServer("localhost")
-            .WithClientId(userId)
-            .WithCredentials("user1", "user1234")
-            .WithCleanSession()
-            .Build();
-        
-        mqttClient.ApplicationMessageReceivedAsync += e =>
-        {
-            Clients.Caller.SendAsync(JsonSerializer.Serialize(e));
-            
-            return Task.CompletedTask;
-        };
-
         _context.Subscriptions.Add(new Subscription
         {
             UserId = userId,
             Topic = topic
         });
 
-        await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-    
-        var mqttSubscribeOptions = _mqttFactory.CreateSubscribeOptionsBuilder()
-            .WithTopicFilter(f => { f.WithTopic(topic); })
-            .Build();
-        
-        await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
+        await _context.SaveChangesAsync();
     }
     
-    public Task UnsubscribeFromTopic(string topic)
+    public async Task UnsubscribeFromTopic(string topic)
     {
         var record = _context.Subscriptions
             .FirstOrDefaultAsync(u => u.Topic == topic & u.UserId == userId);
 
         _context.Remove(record);
 
-        _context.SaveChanges();
-
-        return Task.CompletedTask;
+        await _context.SaveChangesAsync();
     }
     
     public override Task OnDisconnectedAsync(Exception? exception)
