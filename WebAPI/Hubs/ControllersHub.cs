@@ -1,6 +1,4 @@
 ﻿using System.Text;
-using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
@@ -33,13 +31,13 @@ public class ControllersHub : Hub
         _messages = new Queue<string?>();
     }
     
-    public override async Task OnConnectedAsync()
+    public async Task OnConnectedAsync(CancellationToken ct)
     {
         _logger.LogInformation($"{userId} has been connected");
         
         var subs = await _context.Subscriptions
             .Where(u => u.UserId == userId)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         var res = new
         {
@@ -47,7 +45,7 @@ public class ControllersHub : Hub
             topics = subs
         };
         
-        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString());
+        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString(), ct);
         
         var mqttClient = _mqttFactory.CreateMqttClient();
         mqttClient.ApplicationMessageReceivedAsync += e =>
@@ -63,7 +61,7 @@ public class ControllersHub : Hub
             .WithCleanSession()
             .Build();
         
-        await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+        await mqttClient.ConnectAsync(mqttClientOptions, ct);
         
         // создать сокет и подписаться на все топики пользователя
         foreach (var sub in subs)
@@ -72,7 +70,7 @@ public class ControllersHub : Hub
                 .WithTopicFilter(f => { f.WithTopic(sub.Topic); })
                 .Build();
         
-            await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
+            await mqttClient.SubscribeAsync(mqttSubscribeOptions, ct);
         }
         
         _connections.AddConnection(userId, mqttClient);
@@ -92,25 +90,34 @@ public class ControllersHub : Hub
         }
     }
     
-    public async Task SubscribeToTopic(string topic)
+    public async Task SubscribeToTopic(string topic, CancellationToken ct)
     {
-        _context.Subscriptions.Add(new Subscription
+        if (_connections[Context.User.Identity.Name] != null)
         {
-            UserId = userId,
-            Topic = topic
-        });
-
-        await _context.SaveChangesAsync();
+            var mqttSubscribeOptions = _mqttFactory.CreateSubscribeOptionsBuilder()
+                .WithTopicFilter(f => { f.WithTopic(topic); })
+                .Build();
+        
+            await _connections[Context.User.Identity.Name]
+                .SubscribeAsync(mqttSubscribeOptions, ct);
+            
+            _logger.LogInformation($"{userId} has subscribed to {topic}");
+        }
     }
     
-    public async Task UnsubscribeFromTopic(string topic)
+    public async Task UnsubscribeFromTopic(string topic, CancellationToken ct)
     {
-        var record = _context.Subscriptions
-            .FirstOrDefaultAsync(u => u.Topic == topic & u.UserId == userId);
-
-        _context.Remove(record);
-
-        await _context.SaveChangesAsync();
+        if (_connections[Context.User.Identity.Name] != null)
+        {
+            var mqttUnsubscribeOptions = _mqttFactory.CreateUnsubscribeOptionsBuilder()
+                .WithTopicFilter(topic)
+                .Build();
+        
+            await _connections[Context.User.Identity.Name]
+                .UnsubscribeAsync(mqttUnsubscribeOptions, ct);
+            
+            _logger.LogInformation($"{userId} has unsubscribed to {topic}");
+        }
     }
     
     public override Task OnDisconnectedAsync(Exception? exception)
