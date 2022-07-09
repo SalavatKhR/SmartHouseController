@@ -1,4 +1,6 @@
+using MQTTnet;
 using MQTTnet.AspNetCore;
+using MQTTnet.Client;
 using MQTTnet.Server;
 using Serilog;
 using Serilog.Events;
@@ -26,6 +28,16 @@ builder.Services
     .AddMqttConnectionHandler()
     .AddConnections()
     .AddMqttTcpServerAdapter();
+
+var factory = new MqttFactory();
+
+var mqttClientOptions = new MqttClientOptionsBuilder()
+    .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
+    .WithClientId("CONTROLLER")
+    .WithCredentials("user1", "user1234")
+    .WithTls()
+    .WithCleanSession()
+    .Build();
 
 builder.Services.AddMqttConnectionHandler();
 builder.Services.AddMqttWebSocketServerAdapter();

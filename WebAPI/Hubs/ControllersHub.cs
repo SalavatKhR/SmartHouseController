@@ -15,6 +15,7 @@ public class ControllersHub : Hub
     private readonly IConnections _connections;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ControllersHub> _logger;
+    private readonly IConfiguration _configuration;
     private readonly Queue<string?> _messages;
 
     private readonly string userId = "120877ed-84b9-4ed5-9b87-d78965fc4fe0";
@@ -22,22 +23,24 @@ public class ControllersHub : Hub
         MqttFactory mqttFactory,
         IConnections connections,
         ApplicationDbContext context,
-        ILogger<ControllersHub> logger)
+        ILogger<ControllersHub> logger,
+        IConfiguration configuration)
     {
         _mqttFactory = mqttFactory;
         _connections = connections;
         _context = context;
         _logger = logger;
+        _configuration = configuration;
         _messages = new Queue<string?>();
     }
     
-    public async Task OnConnectedAsync(CancellationToken ct)
+    public override async Task OnConnectedAsync()
     {
         _logger.LogInformation($"{userId} has been connected");
         
         var subs = await _context.Subscriptions
             .Where(u => u.UserId == userId)
-            .ToListAsync(ct);
+            .ToListAsync();
 
         var res = new
         {
@@ -45,7 +48,7 @@ public class ControllersHub : Hub
             topics = subs
         };
         
-        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString(), ct);
+        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString());
         
         var mqttClient = _mqttFactory.CreateMqttClient();
         mqttClient.ApplicationMessageReceivedAsync += e =>
@@ -56,12 +59,14 @@ public class ControllersHub : Hub
         };
 
         var mqttClientOptions = new MqttClientOptionsBuilder()
-            .WithTcpServer("localhost")
+            .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
             .WithClientId(Context.ConnectionId)
+            .WithCredentials("user1", "user1234")
+            .WithTls()
             .WithCleanSession()
             .Build();
-        
-        await mqttClient.ConnectAsync(mqttClientOptions, ct);
+
+        await mqttClient.ConnectAsync(mqttClientOptions);
         
         // создать сокет и подписаться на все топики пользователя
         foreach (var sub in subs)
@@ -70,7 +75,7 @@ public class ControllersHub : Hub
                 .WithTopicFilter(f => { f.WithTopic(sub.Topic); })
                 .Build();
         
-            await mqttClient.SubscribeAsync(mqttSubscribeOptions, ct);
+            await mqttClient.SubscribeAsync(mqttSubscribeOptions);
         }
         
         _connections.AddConnection(userId, mqttClient);

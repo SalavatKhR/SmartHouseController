@@ -18,14 +18,12 @@ public class ApplicationDbContext: IdentityDbContext<AppUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-
-
+        
         builder.Entity<Subscription>(entity =>
         {
-            entity.HasKey(e => e.UserId);
+            entity.HasKey(e => new {e.UserId, e.Topic});
         });
-
-
+        
         builder.Entity<AppUser>(entity =>
         {
             entity.HasData(
