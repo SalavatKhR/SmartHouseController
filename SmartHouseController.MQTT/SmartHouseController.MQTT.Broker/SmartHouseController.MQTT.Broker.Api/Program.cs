@@ -30,7 +30,7 @@ builder.Services
     .AddMqttTcpServerAdapter();
 
 var factory = new MqttFactory();
-
+var mqttClient = factory.CreateMqttClient();
 var mqttClientOptions = new MqttClientOptionsBuilder()
     .WithTcpServer("0df1d148747b496d85f8ca59339e72a9.s2.eu.hivemq.cloud")
     .WithClientId("CONTROLLER")
@@ -38,6 +38,8 @@ var mqttClientOptions = new MqttClientOptionsBuilder()
     .WithTls()
     .WithCleanSession()
     .Build();
+
+await mqttClient.ConnectAsync(mqttClientOptions);
 
 builder.Services.AddMqttConnectionHandler();
 builder.Services.AddMqttWebSocketServerAdapter();
@@ -53,6 +55,15 @@ if (app.Environment.IsDevelopment())
 app.UseMqttServer(server =>
 {
     server.Setup();
+    server.InterceptingPublishAsync += async e =>
+    {
+        var applicationMessage = new MqttApplicationMessageBuilder()
+            .WithTopic(e.ApplicationMessage.Topic)
+            .WithPayload(e.ApplicationMessage.Payload)
+            .Build();
+        
+        await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+    };
 });
 
 app.UseHttpsRedirection();
