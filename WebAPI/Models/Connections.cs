@@ -22,4 +22,7 @@ public class Connections : IConnections
     }
 
     public IMqttClient? this[string id] => _connections[id];
+
+    public bool HasConnection(string userId) 
+        => _connections.ContainsKey(userId);
 }

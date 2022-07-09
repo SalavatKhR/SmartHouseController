@@ -15,7 +15,6 @@ public class ControllersHub : Hub
     private readonly IConnections _connections;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ControllersHub> _logger;
-    private readonly IConfiguration _configuration;
     private readonly Queue<string?> _messages;
 
     private readonly string userId = "120877ed-84b9-4ed5-9b87-d78965fc4fe0";
@@ -23,18 +22,16 @@ public class ControllersHub : Hub
         MqttFactory mqttFactory,
         IConnections connections,
         ApplicationDbContext context,
-        ILogger<ControllersHub> logger,
-        IConfiguration configuration)
+        ILogger<ControllersHub> logger)
     {
         _mqttFactory = mqttFactory;
         _connections = connections;
         _context = context;
         _logger = logger;
-        _configuration = configuration;
         _messages = new Queue<string?>();
     }
     
-    public override async Task OnConnectedAsync()
+    public async Task GetUpdates()
     {
         _logger.LogInformation($"{userId} has been connected");
         
@@ -55,7 +52,7 @@ public class ControllersHub : Hub
         {
             _messages.Enqueue(Encoding.UTF8.GetString(e.ApplicationMessage.Payload));
 
-             return Task.CompletedTask;
+            return Task.CompletedTask;
         };
 
         var mqttClientOptions = new MqttClientOptionsBuilder()
@@ -79,12 +76,7 @@ public class ControllersHub : Hub
         }
         
         _connections.AddConnection(userId, mqttClient);
-
-        await GetUpdates();
-    }
-
-    private async Task GetUpdates()
-    {
+        
         while (true)
         {
             if (_messages.TryDequeue(out var message))
