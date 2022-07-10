@@ -22,6 +22,7 @@ public class ApplicationDbContext: IdentityDbContext<AppUser>
         builder.Entity<Subscription>(entity =>
         {
             entity.HasKey(e => new {e.UserId, e.Topic});
+            entity.Property(e => e.DeviceName).IsRequired();
         });
         
         builder.Entity<AppUser>(entity =>

@@ -202,7 +202,9 @@ namespace WebAPI.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    Topic = table.Column<string>(type: "text", nullable: false)
+                    Topic = table.Column<string>(type: "text", nullable: false),
+                    DeviceName = table.Column<string>(type: "text", nullable: false),
+                    DeviceDescription = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
