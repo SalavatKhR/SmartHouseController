@@ -33,11 +33,12 @@ public class ControllersHub : Hub
     
     public async Task GetUpdates()
     {
+        var cts = new CancellationTokenSource();
         _logger.LogInformation($"{userId} has been connected");
         
         var subs = await _context.Subscriptions
             .Where(u => u.UserId == userId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken: cts.Token);
 
         var res = new
         {
@@ -45,7 +46,7 @@ public class ControllersHub : Hub
             topics = subs
         };
         
-        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString());
+        await Clients.Client(Context.ConnectionId).SendAsync(res.ToString(), cancellationToken: cts.Token);
         
         var mqttClient = _mqttFactory.CreateMqttClient();
         mqttClient.ApplicationMessageReceivedAsync += e =>
@@ -72,17 +73,15 @@ public class ControllersHub : Hub
                 .WithTopicFilter(f => { f.WithTopic(sub.Topic); })
                 .Build();
         
-            await mqttClient.SubscribeAsync(mqttSubscribeOptions);
+            await mqttClient.SubscribeAsync(mqttSubscribeOptions, cts.Token);
         }
-        
-        _connections.AddConnection(userId, mqttClient);
         
         while (true)
         {
             if (_messages.TryDequeue(out var message))
             {
                 Console.WriteLine(message);
-                await Clients.Client(Context.ConnectionId).SendAsync("GetUpdates", message);
+                await Clients.Client(Context.ConnectionId).SendAsync("GetUpdates", message, cancellationToken: cts.Token);
             }
         }
     }
@@ -119,8 +118,6 @@ public class ControllersHub : Hub
     
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        _connections.RemoveConnection(userId);
-        
         _logger.LogInformation($"{userId} has been disconnected");
         
         return base.OnDisconnectedAsync(exception);

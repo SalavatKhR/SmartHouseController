@@ -1,23 +1,44 @@
-﻿using MQTTnet.Server;
+﻿using MQTTnet.Client;
+using MQTTnet.Server;
 using SmartHouseController.MQTT.Broker.Server.Handlers;
 
 namespace SmartHouseController.MQTT.Broker.Server.Extension;
 
 public static class ServerExtensions
 {
-    public static MqttServer Setup(this MqttServer mqttServer)
+    public static MqttServer WithOnMessageLogHandler(this MqttServer mqttServer)
     {
-        mqttServer.ValidatingConnectionAsync +=
-            ClientActionHandlers.OnConnectedValidateAsync;
+        mqttServer.InterceptingPublishAsync += 
+            ClientActionHandlers.OnMessageLogAsync;
 
-        mqttServer.ClientConnectedAsync += 
-            ClientActionHandlers.OnConnectedAsync;
+        return mqttServer;
+    }
+    public static MqttServer WithInterceptingPublishHandler(this MqttServer mqttServer, IMqttClient client)
+    {
+        mqttServer.InterceptingPublishAsync += e => ClientActionHandlers.OnInterceptPublishAsync(e, client);
 
+        return mqttServer;
+    }
+    
+    public static MqttServer WithDisconnectedHandler(this MqttServer mqttServer)
+    {
         mqttServer.ClientDisconnectedAsync +=
             ClientActionHandlers.OnDisconnectedAsync;
 
-        mqttServer.InterceptingPublishAsync += 
-            ClientActionHandlers.OnMessageAsync;
+        return mqttServer;
+    }
+
+    public static MqttServer WithValidationHandler(this MqttServer mqttServer)
+    {
+        mqttServer.ValidatingConnectionAsync +=
+            ClientActionHandlers.OnConnectedValidateAsync;
+        return mqttServer;
+    }
+
+    public static MqttServer WithConnectedHandler(this MqttServer mqttServer)
+    {
+        mqttServer.ClientConnectedAsync += 
+            ClientActionHandlers.OnConnectedAsync;
 
         return mqttServer;
     }
