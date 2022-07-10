@@ -42,8 +42,8 @@ public class Startup
                 builder =>
                 {
                     builder
-                        .SetIsOriginAllowed(origin => true)
-                        .WithMethods("GET") 
+                        .AllowAnyOrigin()
+                        .AllowAnyMethod()
                         .AllowAnyHeader();
                 });
         });

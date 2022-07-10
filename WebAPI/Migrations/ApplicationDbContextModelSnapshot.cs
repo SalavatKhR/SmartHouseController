@@ -458,6 +458,14 @@ namespace WebAPI.Migrations
                     b.Property<string>("Topic")
                         .HasColumnType("text");
 
+                    b.Property<string>("DeviceDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("UserId", "Topic");
 
                     b.ToTable("Subscriptions");
