@@ -456,10 +456,9 @@ namespace WebAPI.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Topic")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("UserId");
+                    b.HasKey("UserId", "Topic");
 
                     b.ToTable("Subscriptions");
                 });

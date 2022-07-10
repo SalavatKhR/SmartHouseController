@@ -12,7 +12,7 @@ using WebAPI.Data;
 namespace WebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220705115608_Init")]
+    [Migration("20220708193023_Init")]
     partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -458,10 +458,9 @@ namespace WebAPI.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Topic")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("UserId");
+                    b.HasKey("UserId", "Topic");
 
                     b.ToTable("Subscriptions");
                 });

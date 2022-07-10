@@ -206,7 +206,7 @@ namespace WebAPI.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Subscriptions", x => x.UserId);
+                    table.PrimaryKey("PK_Subscriptions", x => new { x.UserId, x.Topic });
                     table.ForeignKey(
                         name: "FK_Subscriptions_AspNetUsers_UserId",
                         column: x => x.UserId,

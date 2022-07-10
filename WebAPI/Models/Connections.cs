@@ -20,4 +20,9 @@ public class Connections : IConnections
         _connections[userId]?.Dispose();
         _connections.TryRemove(userId, out var value);
     }
+
+    public IMqttClient? this[string id] => _connections[id];
+
+    public bool HasConnection(string userId) 
+        => _connections.ContainsKey(userId);
 }

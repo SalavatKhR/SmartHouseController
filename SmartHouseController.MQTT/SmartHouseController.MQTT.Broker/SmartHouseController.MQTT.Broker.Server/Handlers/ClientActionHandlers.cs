@@ -1,5 +1,6 @@
 ﻿using System.Text;
-using System.Text.Json;
+using MQTTnet;
+using MQTTnet.Client;
 using MQTTnet.Server;
 using Serilog;
 using SmartHouseController.MQTT.Broker.Server.Exceptions;
@@ -31,7 +32,7 @@ public static class ClientActionHandlers
         return Task.CompletedTask;
     }
 
-    public static Task OnMessageAsync(InterceptingPublishEventArgs e)
+    public static Task OnMessageLogAsync(InterceptingPublishEventArgs e)
     {
         var message = new MessageDto
             {
@@ -40,11 +41,20 @@ public static class ClientActionHandlers
                     ? throw new EmptyFieldMessageRequestException("Payload")
                     : Encoding.UTF8.GetString(e.ApplicationMessage!.Payload),
                 Topic = e.ApplicationMessage.Topic ?? throw new EmptyFieldMessageRequestException("Topic"),
-                QoS = (int) e.ApplicationMessage.QualityOfServiceLevel
             };
         
-        Log.Logger.Information(JsonSerializer.Serialize(message));
+        Log.Logger.Information($"topic: {message.Topic}, payload: {message.Payload}");
 
         return Task.CompletedTask;
+    }
+
+    public static async Task OnInterceptPublishAsync(InterceptingPublishEventArgs e, IMqttClient mqttClient)
+    {
+        var applicationMessage = new MqttApplicationMessageBuilder()
+            .WithTopic(e.ApplicationMessage.Topic)
+            .WithPayload(e.ApplicationMessage.Payload)
+            .Build();
+        
+        await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
     }
 }
