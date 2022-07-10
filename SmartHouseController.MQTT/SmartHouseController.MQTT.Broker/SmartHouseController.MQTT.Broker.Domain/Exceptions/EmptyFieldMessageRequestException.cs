@@ -1,4 +1,4 @@
-﻿namespace SmartHouseController.MQTT.Broker.Server.Exceptions;
+﻿namespace SmartHouseController.MQTT.Broker.Domain.Exceptions;
 
 public class EmptyFieldMessageRequestException : Exception
 {

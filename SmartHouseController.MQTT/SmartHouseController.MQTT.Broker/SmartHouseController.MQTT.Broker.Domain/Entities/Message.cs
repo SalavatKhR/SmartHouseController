@@ -1,4 +1,4 @@
-﻿namespace SmartHouseController.MQTT.Broker.Domain;
+﻿namespace SmartHouseController.MQTT.Broker.Domain.Entities;
 
 public class Message
 {

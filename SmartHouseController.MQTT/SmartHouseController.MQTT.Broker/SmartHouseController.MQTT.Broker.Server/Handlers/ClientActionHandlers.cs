@@ -3,7 +3,7 @@ using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Server;
 using Serilog;
-using SmartHouseController.MQTT.Broker.Server.Exceptions;
+using SmartHouseController.MQTT.Broker.Domain.Exceptions;
 using SmartHouseController.MQTT.Broker.Server.Models;
 
 namespace SmartHouseController.MQTT.Broker.Server.Handlers;
