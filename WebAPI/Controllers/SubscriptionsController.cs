@@ -19,6 +19,7 @@ public class SubscriptionsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        var t = User;
         var claims = Handlers.TokenHandler.GetClaims(Request);
         
         var subs = await _context.Subscriptions
