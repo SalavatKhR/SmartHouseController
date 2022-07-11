@@ -16,7 +16,7 @@ public class ControllersHub : Hub
     private readonly IConnections _connections;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ControllersHub> _logger;
-    private readonly Queue<Message> _messages;
+    private readonly Queue<MessageDto> _messages;
     
     public ControllersHub(
         MqttFactory mqttFactory,
@@ -28,7 +28,7 @@ public class ControllersHub : Hub
         _connections = connections;
         _context = context;
         _logger = logger;
-        _messages = new Queue<Message>();
+        _messages = new Queue<MessageDto>();
     }
 
     public async Task GetUpdates(string token)
@@ -50,7 +50,7 @@ public class ControllersHub : Hub
         {
             var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
             var topic = e.ApplicationMessage.Topic;
-            _messages.Enqueue(new Message
+            _messages.Enqueue(new MessageDto
             {
                 Payload = payload,
                 Topic = topic,
@@ -125,10 +125,14 @@ public class ControllersHub : Hub
             _logger.LogInformation($"{userId} has unsubscribed to {topic}");
         }
     }
-    
-    public override Task OnDisconnectedAsync(Exception? exception)
+
+    public Task OnDisconnectedAsync(Exception exception, string token)
     {
-        _logger.LogInformation($"{userId} has been disconnected");
+        var userId = new JwtSecurityTokenHandler()
+            .ReadJwtToken(token).Claims
+            .First(claim => claim.Type == "sub").Value;
+
+        _connections.RemoveConnection(userId);
         
         return base.OnDisconnectedAsync(exception);
     }
