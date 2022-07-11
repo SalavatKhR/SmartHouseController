@@ -1,0 +1,24 @@
+@import "/src/styles/mixins.sass"
+
+.controller
+  display: flex
+  align-items: center
+
+  &:not(:last-child)
+    margin-bottom: 12px
+
+  &Status
+    width: 16px
+    height: 16px
+    background: $c-grey
+    border-radius: 30px
+    margin-right: 12px
+
+    &Active
+      background: $c-success
+
+  &Name
+    max-width: 300px
+    width: 100%
+    @include content-16
+    margin-right: 16px

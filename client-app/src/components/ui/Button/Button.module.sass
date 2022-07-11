@@ -1,0 +1,29 @@
+@import "../../../styles/mixins"
+
+.button
+  width: 149px
+  height: 50px
+  padding-top: 100px
+  text-align: center
+  margin: 0 auto
+
+  button
+    border-radius: 25px
+    @include regular-text
+    font-style: normal
+    font-weight: 600
+    font-size: 17px
+    line-height: 22px
+    text-align: center
+    padding: 14px 30px
+    border: 3px solid $c-primary
+    color: $c-primary
+    box-sizing: border-box
+
+    background: #FFFFFF
+
+    &:disabled
+      border: none
+      background: rgba(116, 116, 128, 0.08)
+      color: $c-label-light
+      cursor: pointer

@@ -1,0 +1,24 @@
+@import "../../../styles/mixins"
+
+.input
+  display: flex
+  flex-direction: column
+  justify-content: stretch
+  align-items: center
+  position: relative
+
+  input
+    width: 375px
+    height: 60px
+    border: none
+    border-bottom: 1px solid $c-label-light
+    background: transparent
+    text-align: center
+    font-style: normal
+    font-weight: normal
+    font-size: 17px
+    line-height: 22px
+    color: $c-label-light
+
+  .error
+    color: $c-error
