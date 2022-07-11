@@ -17,6 +17,7 @@ public class ControllersHub : Hub
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ControllersHub> _logger;
     private readonly Queue<MessageDto> _messages;
+    private List<string> _subscriptions;
     
     public ControllersHub(
         MqttFactory mqttFactory,
@@ -29,6 +30,7 @@ public class ControllersHub : Hub
         _context = context;
         _logger = logger;
         _messages = new Queue<MessageDto>();
+        _subscriptions = new List<string>();
     }
 
     public async Task GetUpdates(string token)
@@ -88,7 +90,7 @@ public class ControllersHub : Hub
         }
     }
     
-    public async Task SubscribeToTopic(string topic, string token, CancellationToken ct)
+    public async Task SubscribeToTopic(string topic, string token)
     {
         var userId = new JwtSecurityTokenHandler()
             .ReadJwtToken(token).Claims
@@ -101,13 +103,13 @@ public class ControllersHub : Hub
                 .Build();
         
             await _connections[userId]
-                .SubscribeAsync(mqttSubscribeOptions, ct);
+                .SubscribeAsync(mqttSubscribeOptions);
             
             _logger.LogInformation($"{userId} has subscribed to {topic}");
         }
     }
     
-    public async Task UnsubscribeFromTopic(string topic, string token, CancellationToken ct)
+    public async Task UnsubscribeFromTopic(string topic, string token)
     {
         var userId = new JwtSecurityTokenHandler()
             .ReadJwtToken(token).Claims
@@ -120,19 +122,21 @@ public class ControllersHub : Hub
                 .Build();
         
             await _connections[userId]
-                .UnsubscribeAsync(mqttUnsubscribeOptions, ct);
+                .UnsubscribeAsync(mqttUnsubscribeOptions);
             
             _logger.LogInformation($"{userId} has unsubscribed to {topic}");
         }
     }
 
-    public Task OnDisconnectedAsync(Exception exception, string token)
+    public Task OnDisconnectedAsync(Exception? exception, string token)
     {
         var userId = new JwtSecurityTokenHandler()
             .ReadJwtToken(token).Claims
             .First(claim => claim.Type == "sub").Value;
 
         _connections.RemoveConnection(userId);
+        
+        _logger.LogInformation($"{userId} has disconnected");
         
         return base.OnDisconnectedAsync(exception);
     }
