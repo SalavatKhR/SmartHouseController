@@ -68,7 +68,7 @@ public class ControllersHub : Hub
             .WithCleanSession()
             .Build();
 
-        await mqttClient.ConnectAsync(mqttClientOptions, cts.Token);
+        await mqttClient.ConnectAsync(mqttClientOptions);
         
         // создать сокет и подписаться на все топики пользователя
         foreach (var sub in subs)
@@ -88,7 +88,7 @@ public class ControllersHub : Hub
         }
     }
     
-    public async Task SubscribeToTopic(string topic, string token, CancellationToken ct)
+    public async Task SubscribeToTopic(string topic, string token)
     {
         var userId = new JwtSecurityTokenHandler()
             .ReadJwtToken(token).Claims
@@ -101,13 +101,13 @@ public class ControllersHub : Hub
                 .Build();
         
             await _connections[userId]
-                .SubscribeAsync(mqttSubscribeOptions, ct);
+                .SubscribeAsync(mqttSubscribeOptions);
             
             _logger.LogInformation($"{userId} has subscribed to {topic}");
         }
     }
     
-    public async Task UnsubscribeFromTopic(string topic, string token, CancellationToken ct)
+    public async Task UnsubscribeFromTopic(string topic, string token)
     {
         var userId = new JwtSecurityTokenHandler()
             .ReadJwtToken(token).Claims
@@ -120,7 +120,7 @@ public class ControllersHub : Hub
                 .Build();
         
             await _connections[userId]
-                .UnsubscribeAsync(mqttUnsubscribeOptions, ct);
+                .UnsubscribeAsync(mqttUnsubscribeOptions);
             
             _logger.LogInformation($"{userId} has unsubscribed to {topic}");
         }
