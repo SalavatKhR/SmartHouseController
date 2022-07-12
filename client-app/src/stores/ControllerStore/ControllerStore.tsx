@@ -1,4 +1,4 @@
-import {observable} from "mobx";
+import {action, observable} from "mobx";
 import {ControllerModel} from "../../models/ControllerModel/ControllerModel";
 
 export class ControllerStore{
@@ -24,4 +24,16 @@ export class ControllerStore{
             id: 4,
         }
     ];
+
+    @action
+    addController = (controller: ControllerModel) => {
+        this.controllers.push(controller);
+    }
+
+    @action
+    removeController = (controllerId: number) => {
+        const controllerIndex = this.controllers.findIndex((controller: ControllerModel) => controller.id === controllerId);
+        this.controllers.splice(controllerIndex, 1);
+    }
+
 }

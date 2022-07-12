@@ -27,7 +27,7 @@ export const ControllerPage: FC = observer(() => {
                 <ul>
                     <li>Название: {controller.name}</li>
                     <li>
-                        {controller.isActive ? 'Активный' : 'Не активный'}
+                        {controller.isActive ? 'Активный' : 'Неактивный'}
                     </li>
                 </ul>
             )}
