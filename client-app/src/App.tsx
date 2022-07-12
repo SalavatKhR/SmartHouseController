@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 import {createBrowserHistory} from "history";
-import {Route, Router, Routes} from "react-router";
+import {Navigate, Route, Router, Routes} from "react-router";
 import {Provider} from 'mobx-react'
 import {BrowserRouter} from "react-router-dom";
 import {MainPage} from "./pages/MainPage/Main";
@@ -19,7 +19,7 @@ function App() {
             <Provider {...mainStore}>
                 <BrowserRouter>
                     <Routes>
-                        <Route path='/' element={<MainPage/>}/>
+                        <Route path='/' element={ <Navigate to="/registration" /> }/>
                         <Route path='/authorization' element={<Auth/>}/>
                         <Route path='/registration' element={<Regis/>}/>
                         <Route path='/controllers' element={<ControllersPage/>}/>
