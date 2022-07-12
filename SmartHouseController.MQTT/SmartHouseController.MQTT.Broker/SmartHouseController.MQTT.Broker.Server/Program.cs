@@ -1,8 +1,22 @@
-﻿using MQTTnet;
+﻿using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Server;
 using Serilog;
+using SmartHouseController.MQTT.Broker.Domain.Data;
+using SmartHouseController.MQTT.Broker.Domain.Entities;
 using SmartHouseController.MQTT.Broker.Server.Extension;
+
+
+var deviceTopics = new List<string>()
+{
+    "zigbee2mqtt/0x00158d0006d51e9a",
+    "zigbee2mqtt/0x04cf8cdf3c79d013",
+    "zigbee2mqtt/0x00158d000704feca",
+};
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -34,7 +48,7 @@ mqttServer
     .WithValidationHandler()
     .WithDisconnectedHandler()
     .WithConnectedHandler()
-    .WithInterceptingPublishHandler(mqttClient)
+    .WithInterceptingPublishHandler(mqttClient, deviceTopics)
     .WithOnMessageLogHandler();
 
 await mqttClient.ConnectAsync(mqttClientOptions);

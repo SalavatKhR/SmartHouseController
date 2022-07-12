@@ -13,10 +13,12 @@ public static class ServerExtensions
 
         return mqttServer;
     }
-    public static MqttServer WithInterceptingPublishHandler(this MqttServer mqttServer, IMqttClient client)
+    public static MqttServer WithInterceptingPublishHandler(this MqttServer mqttServer, IMqttClient client, List<string> topics)
     {
         mqttServer.InterceptingPublishAsync += e => ClientActionHandlers.OnInterceptPublishAsync(e, client);
-
+        mqttServer.InterceptingPublishAsync += e => ServerActionHandler.OnInterceptPublishAsync(e, topics);
+        
+        
         return mqttServer;
     }
     
